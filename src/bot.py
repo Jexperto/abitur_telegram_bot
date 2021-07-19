@@ -1,24 +1,50 @@
 import hashlib
 import io
+import shelve
+import sys
 import telebot
 from threading import Timer
-
 from applicants_data import ApplicantsData
 from network import get_file
 
-token = open("../token.txt", "r").read()
+token = open("../resources/token.txt", "r").read().replace("\n", "").replace("\r", "")
+subs_file = shelve.open("../resources/subscribers")
+subscribers = list(subs_file.keys())
 
-interval = 3600
-download_timer = 60
+args = []
+for i, arg in enumerate(sys.argv):
+    if i>0:
+        args.append(int(arg))
+interval = args[0] if len(args) > 0 else 3600
+download_timer = args[1] if len(args) > 0 else (interval if interval - 1 < 60 else 60)
+
+print(interval)
+print(download_timer)
+
 commands = [['help', 'start'], ['get'], ['subscribe', 'sub'], ['unsubscribe', 'unsub'], ["amount"],
             ['point_summary', 'psum', 'opossum'], ['amount_applicants_higher_than', 'higher']]
-subscribers = {}
 bot = telebot.TeleBot(token=token)
 should_notify = True
 last_file_hash = None
 file_handle = None
 raw_file = None
 can_download = True
+
+
+def add_subscriber(sub_id):
+    global subscribers
+    global subs_file
+    subs_file[str(sub_id)] = False
+    subscribers.append(str(sub_id))
+    return
+
+
+def remove_subscriber(sub_id):
+    global subscribers
+    global subs_file
+    del subs_file[str(sub_id)]
+    subscribers.remove(str(sub_id))
+    return
 
 
 def reset_download():
@@ -57,16 +83,16 @@ def send_update():
                 doc = io.BytesIO(raw_file)
                 doc.name = "table.xls"
                 bot.send_document(key, doc)
-                subscribers[key] = True
+                subs_file[key] = True
         else:
             for key in subscribers:
-                if subscribers[key]:
+                if subs_file[key]:
                     bot.send_message(key, "Пока ничего не менялось")
                 else:
                     doc = io.BytesIO(raw_file)
                     doc.name = "table.xls"
                     bot.send_document(key, doc)
-                    subscribers[key] = True
+                    subs_file[key] = True
 
     t = Timer(interval=interval, function=send_update)
     t.start()
@@ -91,8 +117,8 @@ def send_table(message):
         bot.send_message(message.chat.id, "Что-то пошло не так... Файла нет. \U0001F633")
     else:
         if message.chat.id in subscribers:
-            subscribers[message.chat.id] = True
-            if subscribers[message.chat.id]:
+            subs_file[message.chat.id] = True
+            if subs_file[message.chat.id]:
                 bot.send_message(message.chat.id, "Ничего не поменялось, но забирай \U0001F605")
         doc = io.BytesIO(raw_file)
         doc.name = "table.xls"
@@ -101,16 +127,14 @@ def send_table(message):
 
 @bot.message_handler(commands=['subscribe', 'sub'])
 def sub(message):
-    subscribers[message.chat.id] = False
+    add_subscriber(message.chat.id)
     bot.send_message(message.chat.id, "Буду писать \U0001F609")
-    print('subscribers: ', subscribers)
 
 
 @bot.message_handler(commands=['unsubscribe', 'unsub'])
 def unsub(message):
-    subscribers.pop(message.chat.id)
+    remove_subscriber(message.chat.id)
     bot.send_message(message.chat.id, 'Ты меня бросаешь? \U0001F62D')
-    print('subscribers: ', subscribers)
 
 
 def parse_command(command):
@@ -193,6 +217,17 @@ def amount_applicants_higher_than(message):
 def test(message):
     bot.send_message(message.chat.id, b"\xf0\x9f\x8d\x95")
     print(message)
+
+
+@bot.message_handler(commands=['stop'])
+def stop(message):
+    args = parse_command(message.text)
+    secret = open('../resources/secret.txt').readline().replace("\n", "")
+    if len(args) > 0 and args[0] == secret:
+        bot.stop_polling()
+        bot.send_message(message.chat.id, "Pausing polling...")
+    else:
+        bot.send_message(message.chat.id, "Ага, бегу и падаю \U0001F64A")
 
 
 timer = Timer(interval=interval, function=send_update)

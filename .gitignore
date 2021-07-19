@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#token file
-token.txt
+#sensitive token and user data
+resources/*
+!resources/.gitkeep
 
 #idea
 .idea
