@@ -7,10 +7,15 @@ from threading import Timer
 from applicants_data import ApplicantsData
 from network import get_file
 
+
+table_path = '../resources/table.xls'
 token = open("../resources/token.txt", "r").read().replace("\n", "").replace("\r", "")
 subs_file = shelve.open("../resources/subscribers")
 subscribers = list(subs_file.keys())
-
+temp = open("../resources/secret.txt","a+")
+temp.close()
+temp = open("../resources/token.txt","a+")
+temp.close()
 args = []
 for i, arg in enumerate(sys.argv):
     if i>0:
@@ -18,8 +23,6 @@ for i, arg in enumerate(sys.argv):
 interval = args[0] if len(args) > 0 else 3600
 download_timer = args[1] if len(args) > 0 else (interval if interval - 1 < 60 else 60)
 
-print(interval)
-print(download_timer)
 
 commands = [['help', 'start'], ['get'], ['subscribe', 'sub'], ['unsubscribe', 'unsub'], ["amount"],
             ['point_summary', 'psum', 'opossum'], ['amount_applicants_higher_than', 'higher']]
@@ -59,7 +62,7 @@ def download_file():
     if can_download:
         raw_file = get_file()
         can_download = False
-        file_handle = open('../../abitur_bot/table.xls', 'wb').write(raw_file)
+        file_handle = open(table_path, 'wb').write(raw_file)
         t = Timer(interval=download_timer, function=reset_download)
         t.start()
 
@@ -158,7 +161,7 @@ def amount(message):
         return
     if not file_handle:
         download_file()
-    a = ApplicantsData("table.xls", "09.04.01 Информатика и вычислительная техника")
+    a = ApplicantsData(table_path, "09.04.01 Информатика и вычислительная техника")
     rs = a.amount(any(x in available_args[0] for x in args))
     bot.send_message(message.chat.id, rs)
 
@@ -176,7 +179,7 @@ def point_summary(message):
         return
     if not file_handle:
         download_file()
-    a = ApplicantsData("table.xls", "09.04.01 Информатика и вычислительная техника")
+    a = ApplicantsData(table_path, "09.04.01 Информатика и вычислительная техника")
     bins = 10
     bins_commands = ["г", "группировка", "группа", "g", "group", "b", "bins"]
     for ar in args:
@@ -202,7 +205,7 @@ def amount_applicants_higher_than(message):
 
     if not file_handle:
         download_file()
-    a = ApplicantsData("table.xls", "09.04.01 Информатика и вычислительная техника")
+    a = ApplicantsData(table_path, "09.04.01 Информатика и вычислительная техника")
     value = 1
     value_commands = ["з", "ч", "число", "значение", "v", "value"]
     for ar in args:
@@ -222,7 +225,8 @@ def test(message):
 @bot.message_handler(commands=['stop'])
 def stop(message):
     args = parse_command(message.text)
-    secret = open('../resources/secret.txt').readline().replace("\n", "")
+    secret = open('../resources/secret.txt',"r").readline().replace("\n", "")
+    print(secret)
     if len(args) > 0 and args[0] == secret:
         bot.stop_polling()
         bot.send_message(message.chat.id, "Pausing polling...")

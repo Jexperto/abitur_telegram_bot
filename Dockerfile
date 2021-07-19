@@ -8,4 +8,4 @@ RUN pip3 install -r requirements.txt
 
 COPY /src /src
 COPY /resources /resources
-CMD ["python3", "/src/bot.py", "10", "5"]
+CMD ["python3", "/src/bot.py", "3600", "60"]
