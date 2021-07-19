@@ -37,9 +37,11 @@ can_download = True
 def add_subscriber(sub_id):
     global subscribers
     global subs_file
+    if sub_id in subscribers:
+        return -1
     subs_file[str(sub_id)] = False
     subscribers.append(str(sub_id))
-    return
+    return 0
 
 
 def remove_subscriber(sub_id):
@@ -130,8 +132,11 @@ def send_table(message):
 
 @bot.message_handler(commands=['subscribe', 'sub'])
 def sub(message):
-    add_subscriber(message.chat.id)
-    bot.send_message(message.chat.id, "Буду писать \U0001F609")
+    code = add_subscriber(message.chat.id)
+    if code == -1:
+        bot.send_message(message.chat.id, "Ты дебил, ты и так подписался на меня \U0001F633")
+    else:
+        bot.send_message(message.chat.id, "Буду писать \U0001F609")
 
 
 @bot.message_handler(commands=['unsubscribe', 'unsub'])
