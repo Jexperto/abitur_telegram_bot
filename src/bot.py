@@ -37,7 +37,7 @@ can_download = True
 def add_subscriber(sub_id):
     global subscribers
     global subs_file
-    if sub_id in subscribers:
+    if str(sub_id) in subscribers:
         return -1
     subs_file[str(sub_id)] = False
     subscribers.append(str(sub_id))
