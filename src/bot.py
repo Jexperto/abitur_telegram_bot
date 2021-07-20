@@ -101,7 +101,6 @@ def start_timed_downloads():
 
 
 def notify_user(user_id, doc):
-    print(subs_file[user_id]["notified"])
     if not subs_file[user_id]["notified"]:
         set_nested_object(subs_file, user_id, "notified", True)
         bot.send_message(user_id, "Полундра, файл проапдейтился")
@@ -302,7 +301,6 @@ def test(message):
 def stop(message):
     args = parse_command(message.text)
     secret = open(wd + '../resources/secret.txt', "r").readline().replace("\n", "")
-    print(secret)
     if len(args) > 0 and args[0] == secret:
         bot.stop_polling()
         bot.send_message(message.chat.id, "Pausing polling...")
