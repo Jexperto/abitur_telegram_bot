@@ -87,8 +87,7 @@ def start_timed_downloads():
     if not file:
         return
     if file is None:
-        for key in admins_file.keys():
-            bot.send_message(key, "Something went wrong with getting the file")
+        notify_admins("Tried to start timed downloads but got empty file")
     md5 = hashlib.md5(file).hexdigest()
     raw_file = file
     file_updated = False if md5 == last_file_hash else True
@@ -118,11 +117,19 @@ def notify_user(user_id, doc):
         set_nested_object(subs_file, user_id, "current_int", current_int + interval)
 
 
+def notify_admins(sting):
+    for key in admins_file.keys():
+        bot.send_message(key, sting)
+
+
 def send_updates():
-    doc = io.BytesIO(raw_file)
-    doc.name = "table.xls"
-    for key in subscribers:
-        notify_user(key, doc)
+    if raw_file is None or raw_file == "":
+        notify_admins("Tried to send updates but got empty file")
+    else:
+        doc = io.BytesIO(raw_file)
+        doc.name = "table.xls"
+        for key in subscribers:
+            notify_user(key, doc)
     t = Timer(interval=interval, function=send_updates)
     t.start()
 
